@@ -27,8 +27,8 @@ class CPDataset(data.Dataset):
         self.data_path = osp.join(opt.dataroot, opt.datamode)
         self.transform = transforms.Compose([  \
                 transforms.ToTensor(),   \
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        
+                transforms.Normalize((0.5,), (0.5,))])
+
         # load data list
         im_names = []
         c_names = []
@@ -55,14 +55,14 @@ class CPDataset(data.Dataset):
         else:
             c = Image.open(osp.join(self.data_path, 'warp-cloth', c_name))
             cm = Image.open(osp.join(self.data_path, 'warp-mask', c_name))
-     
+
         c = self.transform(c)  # [-1,1]
         cm_array = np.array(cm)
         cm_array = (cm_array >= 128).astype(np.float32)
         cm = torch.from_numpy(cm_array) # [0,1]
         cm.unsqueeze_(0)
 
-        # person image 
+        # person image
         im = Image.open(osp.join(self.data_path, 'image', im_name))
         im = self.transform(im) # [-1,1]
 
@@ -78,7 +78,7 @@ class CPDataset(data.Dataset):
         parse_cloth = (parse_array == 5).astype(np.float32) + \
                 (parse_array == 6).astype(np.float32) + \
                 (parse_array == 7).astype(np.float32)
-       
+
         # shape downsample
         parse_shape = Image.fromarray((parse_shape*255).astype(np.uint8))
         parse_shape = parse_shape.resize((self.fine_width//16, self.fine_height//16), Image.BILINEAR)
@@ -117,9 +117,9 @@ class CPDataset(data.Dataset):
 
         # just for visualization
         im_pose = self.transform(im_pose)
-        
+
         # cloth-agnostic representation
-        agnostic = torch.cat([shape, im_h, pose_map], 0) 
+        agnostic = torch.cat([shape, im_h, pose_map], 0)
 
         if self.stage == 'GMM':
             im_g = Image.open('grid.png')
@@ -160,7 +160,7 @@ class CPDataLoader(object):
                 num_workers=opt.workers, pin_memory=True, sampler=train_sampler)
         self.dataset = dataset
         self.data_iter = self.data_loader.__iter__()
-       
+
     def next_batch(self):
         try:
             batch = self.data_iter.__next__()
@@ -173,7 +173,7 @@ class CPDataLoader(object):
 
 if __name__ == "__main__":
     print("Check the dataset for geometric matching module!")
-    
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataroot", default = "data")
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action='store_true', help='shuffle input data')
     parser.add_argument('-b', '--batch-size', type=int, default=4)
     parser.add_argument('-j', '--workers', type=int, default=1)
-    
+
     opt = parser.parse_args()
     dataset = CPDataset(opt)
     data_loader = CPDataLoader(opt, dataset)
